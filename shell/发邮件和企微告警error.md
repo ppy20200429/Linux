@@ -1,4 +1,4 @@
-python'''
+'''Python
 
 #!/bin/sh
 
