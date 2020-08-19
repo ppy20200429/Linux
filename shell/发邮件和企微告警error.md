@@ -1,66 +1,80 @@
-### linux下使用自带mail发送邮件
-> 具体步骤如下：
->> 1.需要安装mailx工具，mailx是一个小型的邮件发送程序   yum install mailx
+python'''
+#!/bin/sh
 
->> 2.编辑配置文件   vim /etc/mail.rc 
+# 监控-参数设置
+type="线下跑批详版审批Job"
+monitor_file="/www/PreLoanAuditJob/current/logs/error.log"
+receive_addr="chenyulong@ppdai.com yangpeipei@ppdai.com"
 
->>> 具体配置如下：
+# 如休眠10分钟,使用10m,每sleep_time去检测一次monitor_file文件
+sleep_time=10s
 
-        set from=xxxx@126.com
-        
-        set smtp=smtp.126.com
-        
-        set smtp-auth-user=xx@126.com
-        
-        set smtp-auth-password=xxx
-        
-        set smtp-auth=login
-        
-        ---说明
-        
-        from：对方收到邮件时显示的发件人
-        
-        smtp：指定第三方发邮件的smtp服务器地址
-        
-        set smtp-auth-user：第三方发邮件的用户名
-        
-        set smtp-auth-password：用户名对应的密码,有些邮箱填的是授权码
-        
-        smtp-auth：SMTP的认证方式，默认是login，也可以改成CRAM-MD5或PLAIN方式
+# 发邮件和企微上限
+notice_limit=2
 
->> 3.测试
-    [root@001 ~]# mail -s "hesaucaq" 83xx@qq.com < /etc/passwd
-    
-    [root@001 ~]# echo "测试邮件" | mail -s "测试" 83xx@qq.com
-    
-    以上已经实现了发邮件功能！！！
-    
-    如遇：554 DT:SPM 发送的邮件内容包含了未被网易许可的信息，或违背了网易的反垃圾服务条款，可以自己邮箱发给自己！
-    
- 1)  无邮件正文
+# error数量阈值
+error_limit=50
 
-mail -s "主题"  收件地址
+# 监控-邮件&企业微信处理
+error_num=0
+content=""
+error_msg=""
+current_ip=$(ifconfig | grep 'inet'| grep -v '127.0.0.1'  |grep -v 172 | cut -d: -f2 | awk '{ print $1}')
 
-例如： mail -s "测试"  1968089885@foxmail.com
+# 发送企业微信接口的相关参数
+
+uuid=$(cat /proc/sys/kernel/random/uuid)
+corpid="wx23640668e63d634a"
+corpsecret="tvfr54g7upRzWX9Tqq5g60wAGr8MouX_8eBHIMCZ09s"
+agentid=1000019
+content=""
+wechart_url="http://qcgaojing.ppdapi.com/api_model?mark=qcgaojing"
+
+# 发送企业微信post接口
+function send_enterprise_wechat(){
+  uuid=$(cat /proc/sys/kernel/random/uuid)
+  wechart_receive=${receive_addr/" "/"|"}
+  return $(curl -H "Content-Type:application/json;charset=UTF-8" -X POST -d '{"uuid":"'${uuid}'", "corpid":"'${1}'","corpsecret":"'${2}'","agentid":1000019,"touser":"'${wechart_receive}'","content":"'${4}'"}' $5)
+
+}
 
 
-2) 有邮件正文
 
- mail -s "主题"  收件地址< 文件(邮件正文.txt)
+total_times=0
+echo "$type monitor starting..."
+while :
+do
+ error_num=$(grep -s -c 'ERROR' $monitor_file)
+ if [[ "$error_num" -eq "" ]]
+ then 
+   error_num=0
+ fi
+ echo "错误记录数:$error_num"
+ # error_num > error_limit 且 total_times < notice_limit时，发送邮件告警与企业微信
+ if [ $error_num -gt $error_limit -a $total_times -lt $notice_limit ] 
+ then
  
-例如： mail -s "邮件主题"  1968089885@foxmail.com < /data/findyou.txt
-
- echo "邮件正文" | mail -s 邮件主题  收件地址
- 
-例如： echo "邮件正文内容" | mail -s "邮件主题"  1968089885@foxmail.com
-
- cat 邮件正文.txt | mail -s 邮件主题  收件地址 
- 
-例如： cat  /data/findyou.txt | mail -s "邮件主题"  1968089885@foxmail.com
-
+   # 发邮件
+   error_msg=$(tail -n100 $monitor_file)
+   content="$type-监控发现$error_num个错误,请尽快处理！部分错误如下：$error_msg"
+   echo "$content" |  mail -s "$type-监控报警-$current_ip" $receive_addr
    
-3)  带附件
+   # 发企业微信
+   error_msg=$(tail -n1 $monitor_file)
+   content="$type($current_ip)-监控发现$error_num个错误,请尽快处理!"
+   send_enterprise_wechat "$corpid" "$corpsecret" $agentid "$content" "$wechart_url"
+   echo "调用企微状态:$?"
+   total_times=$(( $total_times + 1 ))
+   echo "告警通知次数:$total_times"
+ fi
+ sleep $sleep_time
+ # error_num <=error_limit 且 total_times >=notice_limit 说明错误信息已经处理，把控制次数计算器设为0
+ if [[ $error_num -lt $error_limit || $error_num -eq $error_limit ]] && [[ $total_times -gt $notice_limit || $total_times -eq $notice_limit ]]
+ then
+   total_times=0
+   echo "重置告警通知计数器为:$total_times"
+ fi
+done
+echo "$type monitor end..."
 
- mail -s "主题"  收件地址  -a 附件 < 文件(邮件正文.txt) 
- 
-例如： mail -s "邮件主题"  1968089885@foxmail.com -a /data/findyou.tar.gz < /data/findyou.txt
+'''
