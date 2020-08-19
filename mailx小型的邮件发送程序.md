@@ -39,28 +39,28 @@
     
  >>> 1)  无邮件正文
 
-mail -s "主题"  收件地址
-
-例如： mail -s "测试"  1968089885@foxmail.com
+     mail -s "主题"  收件地址
+     
+     例如： mail -s "测试"  1968089885@foxmail.com
 
 
 >>> 2) 有邮件正文
 
- mail -s "主题"  收件地址< 文件(邮件正文.txt)
- 
-例如： mail -s "邮件主题"  1968089885@foxmail.com < /data/findyou.txt
-
- echo "邮件正文" | mail -s 邮件主题  收件地址
- 
-例如： echo "邮件正文内容" | mail -s "邮件主题"  1968089885@foxmail.com
-
- cat 邮件正文.txt | mail -s 邮件主题  收件地址 
- 
-例如： cat  /data/findyou.txt | mail -s "邮件主题"  1968089885@foxmail.com
+      mail -s "主题"  收件地址< 文件(邮件正文.txt)
+      
+     例如： mail -s "邮件主题"  1968089885@foxmail.com < /data/findyou.txt
+     
+      echo "邮件正文" | mail -s 邮件主题  收件地址
+      
+     例如： echo "邮件正文内容" | mail -s "邮件主题"  1968089885@foxmail.com
+     
+      cat 邮件正文.txt | mail -s 邮件主题  收件地址 
+      
+     例如： cat  /data/findyou.txt | mail -s "邮件主题"  1968089885@foxmail.com
 
    
 >>> 3)  带附件
 
- mail -s "主题"  收件地址  -a 附件 < 文件(邮件正文.txt) 
- 
-例如： mail -s "邮件主题"  1968089885@foxmail.com -a /data/findyou.tar.gz < /data/findyou.txt
+      mail -s "主题"  收件地址  -a 附件 < 文件(邮件正文.txt) 
+      
+     例如： mail -s "邮件主题"  1968089885@foxmail.com -a /data/findyou.tar.gz < /data/findyou.txt
