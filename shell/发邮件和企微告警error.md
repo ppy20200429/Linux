@@ -4,7 +4,7 @@
 
 >> 2.编辑配置文件   vim /etc/mail.rc 
 
->> 具体配置如下：
+>>> 具体配置如下：
 
     set from=xxxx@126.com
     
