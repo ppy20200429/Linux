@@ -45,7 +45,8 @@ total_times=0
 echo "$type monitor starting..."
 while :
 do
- error_num=$(grep -s -c 'ERROR' $monitor_file)
+ current_date=$(date '+%Y-%m-%d')  ##当天error
+ error_num=$(grep $current_date  $monitor_file | grep -s -c 'ERROR' )
  if [[ "$error_num" -eq "" ]]
  then 
    error_num=0
